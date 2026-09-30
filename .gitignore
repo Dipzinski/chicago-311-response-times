@@ -1,0 +1,6 @@
+# Data is recreated by scripts/download.py (about 450 MB), so it stays out of git.
+data/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
