@@ -1,0 +1,41 @@
+sr_type,year,requests,closed,still_open,median_days,p90_days
+Abandoned Vehicle Complaint,2019,21899,21899,0,13.82,46.46
+Abandoned Vehicle Complaint,2020,32086,26108,5978,15.99,58.06
+Abandoned Vehicle Complaint,2021,41948,41935,13,12.66,36.64
+Abandoned Vehicle Complaint,2022,43640,43341,299,21.68,65.54
+Abandoned Vehicle Complaint,2023,43600,43451,149,9.04,24.47
+Abandoned Vehicle Complaint,2024,48328,48081,247,11.79,36.02
+Abandoned Vehicle Complaint,2025,52005,51669,336,10.91,58.59
+Abandoned Vehicle Complaint,2026,40056,37734,2322,11.79,38.93
+Graffiti Removal Request,2019,35515,35513,2,1.16,3.11
+Graffiti Removal Request,2020,44832,44827,5,0.87,2.77
+Graffiti Removal Request,2021,52375,52367,8,0.96,3.05
+Graffiti Removal Request,2022,57843,57837,6,0.99,3.08
+Graffiti Removal Request,2023,54521,54498,23,0.99,3.05
+Graffiti Removal Request,2024,59647,59469,178,1.0,3.11
+Graffiti Removal Request,2025,58536,57535,1001,0.98,3.05
+Graffiti Removal Request,2026,38373,37655,718,0.96,2.99
+Pothole in Street Complaint,2019,39499,39499,0,24.91,154.24
+Pothole in Street Complaint,2020,26514,26514,0,5.74,58.81
+Pothole in Street Complaint,2021,24335,24333,2,8.14,121.27
+Pothole in Street Complaint,2022,37611,37603,8,10.94,75.12
+Pothole in Street Complaint,2023,29310,29308,2,6.68,53.89
+Pothole in Street Complaint,2024,27759,27734,25,7.55,141.65
+Pothole in Street Complaint,2025,20930,20870,60,13.53,107.93
+Pothole in Street Complaint,2026,27107,22095,5012,8.78,53.69
+Rodent Baiting/Rat Complaint,2019,39229,39229,0,3.0,6.99
+Rodent Baiting/Rat Complaint,2020,51449,51449,0,6.07,13.02
+Rodent Baiting/Rat Complaint,2021,61272,61272,0,10.38,23.94
+Rodent Baiting/Rat Complaint,2022,47517,47515,2,8.93,18.71
+Rodent Baiting/Rat Complaint,2023,46943,46940,3,6.76,22.15
+Rodent Baiting/Rat Complaint,2024,44423,44423,0,4.04,11.08
+Rodent Baiting/Rat Complaint,2025,43017,43017,0,3.69,10.62
+Rodent Baiting/Rat Complaint,2026,33600,32048,1552,3.73,12.83
+Street Light Out Complaint,2019,33772,33772,0,27.64,121.6
+Street Light Out Complaint,2020,33141,33141,0,13.41,42.06
+Street Light Out Complaint,2021,34349,34340,9,4.79,17.22
+Street Light Out Complaint,2022,32152,32070,82,4.88,41.53
+Street Light Out Complaint,2023,29335,29166,169,3.03,17.29
+Street Light Out Complaint,2024,30937,30704,233,2.82,14.3
+Street Light Out Complaint,2025,30177,29748,429,2.4,12.1
+Street Light Out Complaint,2026,23079,22124,955,2.7,15.55

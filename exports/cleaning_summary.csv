@@ -1,0 +1,25 @@
+sr_type,outcome,requests,pct_of_type
+Abandoned Vehicle Complaint,kept,323562,96.8
+Abandoned Vehicle Complaint,closed within 1 hour,7541,2.3
+Abandoned Vehicle Complaint,canceled,3133,0.9
+Abandoned Vehicle Complaint,city-logged work,35,0.0
+Graffiti Removal Request,kept,401642,55.9
+Graffiti Removal Request,city-logged work,279589,38.9
+Graffiti Removal Request,duplicate,25157,3.5
+Graffiti Removal Request,closed within 1 hour,10092,1.4
+Graffiti Removal Request,canceled,2355,0.3
+Pothole in Street Complaint,kept,233065,54.7
+Pothole in Street Complaint,duplicate,133682,31.4
+Pothole in Street Complaint,closed within 1 hour,46595,10.9
+Pothole in Street Complaint,city-logged work,12098,2.8
+Pothole in Street Complaint,canceled,330,0.1
+Rodent Baiting/Rat Complaint,kept,367450,95.6
+Rodent Baiting/Rat Complaint,duplicate,15466,4.0
+Rodent Baiting/Rat Complaint,closed within 1 hour,1212,0.3
+Rodent Baiting/Rat Complaint,canceled,155,0.0
+Rodent Baiting/Rat Complaint,city-logged work,19,0.0
+Street Light Out Complaint,kept,246942,61.9
+Street Light Out Complaint,duplicate,136731,34.3
+Street Light Out Complaint,canceled,6293,1.6
+Street Light Out Complaint,closed within 1 hour,4624,1.2
+Street Light Out Complaint,city-logged work,4232,1.1
