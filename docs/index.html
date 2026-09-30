@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chicago 311 Response Times</title>
+<meta name="description" content="How long Chicago takes to close 311 requests for potholes, street lights, graffiti, rats, and abandoned vehicles, by community area and year.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/4.1.1/plotly-geo.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6; --series-2: #eb6834;
+    /* sequential blue, fewest days -> most days */
+    --seq-1: #cde2fb; --seq-2: #86b6ef; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5; --series-2: #d95926;
+      --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5; --series-2: #d95926;
+    --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; }
+  .lede { color: var(--ink-2); margin: 0 0 20px; max-width: 760px; }
+  a { color: var(--series-1); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin-bottom: 16px; }
+  .filters label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+  select {
+    font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--axis); border-radius: 8px; padding: 7px 10px; min-width: 180px;
+  }
+  .note { font-size: 13px; color: var(--ink-2); margin: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .tile { padding: 14px 16px; }
+  .tile .label { font-size: 13px; color: var(--ink-2); }
+  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.25; }
+  .tile .sub { font-size: 13px; color: var(--ink-2); }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; }
+  .card { padding: 16px; min-width: 0; }
+  .card h2 { font-size: 16px; margin: 0; }
+  .card .sub { font-size: 13px; color: var(--ink-2); margin: 2px 0 8px; }
+  #map { width: 100%; aspect-ratio: 4 / 5; max-height: 640px; }
+  #trend { height: 300px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+
+  details { margin-top: 16px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .table-wrap { max-height: 420px; overflow: auto; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { position: sticky; top: 0; background: var(--surface); color: var(--ink-2); font-weight: 600; }
+
+  .findings { margin-top: 16px; }
+  .findings ul { margin: 8px 0 0; padding-left: 20px; }
+  footer { margin-top: 24px; font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>How long does Chicago take to fix things?</h1>
+  <p class="lede">Days from a 311 request to its close, for five kinds of repairs, across Chicago's 77 community areas.
+    Duplicates, city-logged work, cancellations, and closures within an hour are removed first
+    (<a href="https://github.com/Dipzinski/chicago-311-response-times#cleaning-rules">cleaning rules</a>).</p>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label>Request type <select id="type"></select></label>
+    <label>Year <select id="year"></select></label>
+    <p class="note" id="partial-note" hidden>This year is not over. Requests that are still open have no close date,
+      so this year's medians will rise.</p>
+  </div>
+
+  <section class="tiles" aria-label="Summary">
+    <div class="tile"><div class="label">Median days to close</div><div class="value" id="kpi-median">-</div><div class="sub" id="kpi-median-sub"></div></div>
+    <div class="tile"><div class="label">Requests</div><div class="value" id="kpi-requests">-</div><div class="sub" id="kpi-requests-sub"></div></div>
+    <div class="tile"><div class="label">Slowest community area</div><div class="value" id="kpi-slow">-</div><div class="sub" id="kpi-slow-sub"></div></div>
+    <div class="tile"><div class="label">Fastest community area</div><div class="value" id="kpi-fast">-</div><div class="sub" id="kpi-fast-sub"></div></div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>By community area</h2>
+      <p class="sub">Median days to close. Hover an area for details.</p>
+      <div id="map" role="img" aria-label="Map of median days to close by community area"></div>
+      <div class="legend" id="map-legend"></div>
+    </section>
+    <div>
+      <section class="card">
+        <h2>Citywide, by year</h2>
+        <p class="sub">Median days to close. Full years only: this year's open requests have no close date yet.</p>
+        <div id="trend" role="img" aria-label="Line chart of citywide days to close by year"></div>
+      </section>
+      <section class="card findings">
+        <h2>What the data shows</h2>
+        <p class="sub">From the analysis notebook, data through September 28, 2026.</p>
+        <ul>
+          <li><b>Potholes depend on where you live.</b> In 2025 the 8 slowest community areas, on the West and Northwest Sides,
+            waited a median of 43 days for a pothole request to close, vs 12 days in the rest of the city (3.6x).
+            The same areas were slower in every year since 2019.</li>
+          <li><b>Pothole waits rose 79% in 2025</b> citywide, to a median of 13.5 days.</li>
+          <li><b>Street-light requests close 11.5x faster</b> than in 2019: a median of 2.4 days in 2025, down from 27.6.</li>
+          <li><b>Lower-income areas do not wait longer</b> for any of the five services. Rat complaints close faster there.</li>
+          <li><b>Cleaning matters.</b> Keeping the city's own logged work would make 2024-25 pothole waits look 43% shorter.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>Table: all 77 community areas</summary>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Community area</th><th>Requests</th><th>Median days</th><th>90th percentile days</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </details>
+
+  <footer>
+    Data: <a href="https://data.cityofchicago.org/Service-Requests/311-Service-Requests/v6vf-nfxy">City of Chicago 311 Service Requests</a>,
+    through <span id="data-through"></span>. Income: ACS 5-year estimates by community area (City of Chicago).
+    Code, SQL, and data-quality checks: <a href="https://github.com/Dipzinski/chicago-311-response-times">github.com/Dipzinski/chicago-311-response-times</a>.
+    Built by Kyle Dipzinski.
+  </footer>
+</main>
+
+<script>
+// data.json is written by scripts/build.py: summary tables plus the community-area map.
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const fmt = (x, digits = 1) => x == null ? "-" : x.toLocaleString("en-US", {maximumFractionDigits: digits, minimumFractionDigits: digits});
+const count = x => x.toLocaleString("en-US");
+let DATA;
+
+function setText(id, text) { document.getElementById(id).textContent = text; }
+
+function selection() {
+  return {type: document.getElementById("type").value, year: Number(document.getElementById("year").value)};
+}
+
+function cityRow(type, year) {
+  return DATA.city.find(r => r.type === type && r.year === year);
+}
+
+function areaRows(type, year) {
+  return DATA.areas.filter(r => r.type === type && r.year === year && r.median != null);
+}
+
+// Five classes with about the same number of areas each (quintiles), so every map uses the full ramp.
+function quintileBreaks(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return [1, 2, 3, 4].map(i => sorted[Math.floor(i * sorted.length / 5)]);
+}
+
+function renderTiles(type, year, rows) {
+  const city = cityRow(type, year);
+  const prev = cityRow(type, year - 1);
+  setText("kpi-median", city ? fmt(city.median) : "-");
+  if (city && prev && prev.median) {
+    const change = (city.median / prev.median - 1) * 100;
+    setText("kpi-median-sub", `${change >= 0 ? "▲" : "▼"} ${fmt(Math.abs(change), 0)}% ${change >= 0 ? "slower" : "faster"} than ${year - 1}`);
+  } else {
+    setText("kpi-median-sub", "");
+  }
+  setText("kpi-requests", city ? count(city.requests) : "-");
+  setText("kpi-requests-sub", city ? `${count(city.still_open)} still open` : "");
+  const sorted = [...rows].sort((a, b) => b.median - a.median);
+  const slow = sorted[0], fast = sorted[sorted.length - 1];
+  setText("kpi-slow", slow ? `${fmt(slow.median)} days` : "-");
+  setText("kpi-slow-sub", slow ? DATA.area_names[slow.area] : "");
+  setText("kpi-fast", fast ? `${fmt(fast.median)} days` : "-");
+  setText("kpi-fast-sub", fast ? DATA.area_names[fast.area] : "");
+}
+
+function renderMap(rows) {
+  const colors = [1, 2, 3, 4, 5].map(i => css(`--seq-${i}`));
+  const breaks = quintileBreaks(rows.map(r => r.median));
+  const classOf = v => breaks.filter(b => v >= b).length;
+  const trace = {
+    type: "choropleth",
+    geojson: DATA.geo,
+    featureidkey: "properties.community_area",
+    locations: rows.map(r => r.area),
+    z: rows.map(r => classOf(r.median)),
+    zmin: -0.5, zmax: 4.5,
+    colorscale: colors.flatMap((c, i) => [[i / 5, c], [(i + 1) / 5, c]]),
+    showscale: false,
+    marker: {line: {color: css("--surface"), width: 0.8}},
+    customdata: rows.map(r => [DATA.area_names[r.area], r.median, r.p90, r.requests]),
+    hovertemplate: "<b>%{customdata[1]:.1f} days</b> median<br>%{customdata[2]:.1f} days 90th percentile" +
+                   "<br>%{customdata[3]:,} requests<br>%{customdata[0]}<extra></extra>",
+  };
+  const layout = {
+    geo: {fitbounds: "locations", visible: false, bgcolor: "rgba(0,0,0,0)", projection: {type: "mercator"}},
+    margin: {l: 0, r: 0, t: 0, b: 0},
+    paper_bgcolor: "rgba(0,0,0,0)",
+    hoverlabel: {bgcolor: css("--surface"), bordercolor: css("--axis"), font: {color: css("--ink")}},
+    dragmode: false,
+  };
+  Plotly.react("map", [trace], layout, {displayModeBar: false, responsive: true, scrollZoom: false});
+
+  const legend = document.getElementById("map-legend");
+  legend.replaceChildren();
+  const edges = [Math.min(...rows.map(r => r.median)), ...breaks, Math.max(...rows.map(r => r.median))];
+  colors.forEach((color, i) => {
+    const item = document.createElement("span");
+    const swatch = document.createElement("i");
+    swatch.style.background = color;
+    item.append(swatch, document.createTextNode(`${fmt(edges[i])}-${fmt(edges[i + 1])} days`));
+    legend.append(item);
+  });
+}
+
+function renderTrend(type, year) {
+  const rows = DATA.city.filter(r => r.type === type && r.year <= DATA.last_full_year);
+  const trace = {
+    type: "scatter", mode: "lines+markers", name: "Median",
+    x: rows.map(r => r.year), y: rows.map(r => r.median),
+    customdata: rows.map(r => [r.p90, r.requests]),
+    line: {color: css("--series-1"), width: 2},
+    marker: {size: rows.map(r => r.year === year ? 13 : 8), color: css("--series-1"),
+             line: {color: css("--surface"), width: 2}},
+    hovertemplate: "<b>%{y:.1f} days</b> median<br>%{customdata[0]:.1f} days 90th percentile" +
+                   "<br>%{customdata[1]:,} requests<extra>%{x}</extra>",
+  };
+  const layout = {
+    margin: {l: 44, r: 12, t: 8, b: 36},
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: {family: "system-ui, -apple-system, Segoe UI, sans-serif", color: css("--ink-2"), size: 12},
+    xaxis: {tickmode: "array", tickvals: rows.map(r => r.year), showgrid: false,
+            linecolor: css("--axis"), fixedrange: true},
+    yaxis: {rangemode: "tozero", gridcolor: css("--grid"), zeroline: false, title: {text: "Days"}, fixedrange: true},
+    showlegend: false,
+    hovermode: "closest",
+    hoverlabel: {bgcolor: css("--surface"), bordercolor: css("--axis"), font: {color: css("--ink")}},
+  };
+  Plotly.react("trend", [trace], layout, {displayModeBar: false, responsive: true});
+}
+
+function renderTable(rows) {
+  const body = document.getElementById("table-body");
+  body.replaceChildren();
+  [...rows].sort((a, b) => b.median - a.median).forEach((r, i) => {
+    const tr = document.createElement("tr");
+    [i + 1, DATA.area_names[r.area], count(r.requests), fmt(r.median), fmt(r.p90)].forEach(v => {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.append(td);
+    });
+    body.append(tr);
+  });
+}
+
+function render() {
+  const {type, year} = selection();
+  const rows = areaRows(type, year);
+  document.getElementById("partial-note").hidden = year !== DATA.partial_year;
+  renderTiles(type, year, rows);
+  renderMap(rows);
+  renderTrend(type, year);
+  renderTable(rows);
+}
+
+function init(data) {
+  DATA = data;
+  const typeSelect = document.getElementById("type");
+  const yearSelect = document.getElementById("year");
+  DATA.types.forEach(t => typeSelect.add(new Option(t.label, t.key)));
+  [...DATA.years].reverse().forEach(y => yearSelect.add(new Option(y === DATA.partial_year ? `${y} (to date)` : String(y), y)));
+  yearSelect.value = DATA.last_full_year;
+  typeSelect.addEventListener("change", render);
+  yearSelect.addEventListener("change", render);
+  setText("data-through", DATA.data_through);
+  render();
+  // Redraw with the other palette when the system switches between light and dark.
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+}
+
+fetch("data.json").then(r => r.json()).then(init).catch(err => {
+  setText("kpi-median", "Could not load data.json");
+  console.error(err);
+});
+</script>
+</body>
+</html>
