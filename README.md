@@ -2,7 +2,7 @@
 
 **How long does Chicago take to fix potholes, street lights, graffiti, rats, and abandoned vehicles, and does the wait depend on where you live?**
 
-This project pulls **2,262,000 311 service requests** (January 2019 to September 2026) from the City of Chicago's open-data API into **DuckDB**, cleans them with documented **SQL** rules and **11 automated data-quality checks**, and measures the days from request to close in all **77 community areas**. The analysis uses non-parametric tests (Kruskal-Wallis, Spearman) in Python, and the results are in an interactive dashboard.
+This project pulls **2,262,000 311 service requests** (January 2019 to September 2026) from the City of Chicago's open-data API into **DuckDB**, cleans them with documented **SQL** rules and **11 automated data-quality checks**, and measures the days from request to close in all **77 community areas**. The analysis uses non-parametric tests (Kruskal-Wallis, Spearman) in Python, a **scikit-learn** model predicts which pothole requests will wait more than 30 days, and the results are in an interactive dashboard.
 
 **[Open the dashboard](https://dipzinski.github.io/chicago-311-response-times/)** · [Analysis notebook](analysis.ipynb) · [Cleaning rules (SQL)](sql/01_clean.sql) · [Data-quality checks (SQL)](sql/03_checks.sql)
 
@@ -27,6 +27,34 @@ This project pulls **2,262,000 311 service requests** (January 2019 to September
 ![Median days to close a street-light request, 2019-2025](charts/5_street_lights.png)
 
 Also in the data: citywide pothole waits rose 79% in 2025, to a median of 13.5 days, and 18.6% of 2020 abandoned-vehicle requests (mostly February to July 2020) were never closed.
+
+## Predicting which pothole requests will wait a month
+
+Could the city tell, the moment a pothole request arrives, which ones are going to sit for more than 30 days? [`scripts/model.py`](scripts/model.py) trains a model to answer that, using only what is known at that moment:
+
+- **Where:** community area and coordinates.
+- **When and how:** month, day of week, hour, and the channel it came in through (phone, app, web, alderman's office).
+- **Workload:** how many pothole requests are open in the area and citywide right then, how many came in over the last 7 days, and how fast requests closed over the last 30 days. These are computed only from requests opened or closed *before* the new one arrived, so the model never peeks at the future.
+
+The model is always tested on later years than it learned from: it trains on 2019-2023, its settings are chosen on 2024, and it's then refit on 2019-2024 and scored once on **45,716 requests from January 2025 to August 2026**. "Slow" means not closed within 30 days; 32% of the test requests were slow.
+
+| Model (test years: Jan 2025 - Aug 2026) | ROC AUC | Slow share in the riskiest 20% |
+|---|---:|---:|
+| Each area's past slow rate (baseline) | 0.661 | 49.8% |
+| Logistic regression: location + calendar | 0.764 | 66.2% |
+| Gradient boosting: location + calendar | 0.789 | 69.6% |
+| Gradient boosting: workload + calendar, no location | 0.805 | 69.2% |
+| **Gradient boosting: all inputs** | **0.822** | **71.9%** |
+
+The full model ranks requests well on years it never saw. Of the 10% it rated riskiest, **79%** waited more than 30 days; of the 10% it rated safest, **2.5%** did. If the city flagged the riskiest 20%, about 72% of the flagged requests would be slow (vs 32% overall), and the flags would catch 45% of all slow requests.
+
+![Share of slow requests by predicted-risk decile](charts/6_model_risk_deciles.png)
+
+**What drives it.** Shuffling one input at a time and measuring the drop in test AUC shows the model leans on the **month** most, then the **community area**, then the **number of requests already open in the area**. The month effect is large and runs against intuition: requests opened in July waited more than 30 days 54% of the time (2019-2024), vs 13% in February, even though February brought 1.8 times as many requests. Winter's surge of pothole requests gets closed faster than the smaller summer load. A model without any location inputs still scores 0.805, so much of the neighborhood gap travels with workload and timing, but adding location still helps (0.822), so workload doesn't explain all of it.
+
+![Permutation importance of the top 8 inputs](charts/7_model_importance.png)
+
+All the numbers above are in [`exports/model_metrics.json`](exports/model_metrics.json), which the script rewrites on every run.
 
 ## Cleaning rules
 
@@ -69,11 +97,13 @@ City of Chicago API ──► scripts/download.py ──► data/311.duckdb   (r
                         sql/03_checks.sql  ──► 11 data-quality checks (the build stops if one fails)
                                                      │
                  analysis.ipynb (tests and charts)       docs/ (dashboard on GitHub Pages)
+                 scripts/model.py (scikit-learn model: which pothole requests will wait 30+ days)
 ```
 
 - **Download:** the [Socrata API](https://dev.socrata.com/) returns up to 50,000 rows per request. The script pages through each request type by `sr_number` (keyset pagination, which stays correct while the city updates the data) and fetches the 5 types in parallel, with retries for the API's busy errors. It stops at midnight so the row counts and the pages describe the same snapshot.
 - **SQL:** DuckDB runs the cleaning, the summaries (median and 90th percentile with `median()` and `quantile_cont()`), and the checks, all in plain SQL files.
 - **Statistics:** Kruskal-Wallis tests whether waits differ across the 77 areas. It compares ranks, so a few extreme waits don't dominate. With thousands of requests almost any difference is "significant", so the effect size ε² is what gets compared. Spearman correlations test the link to income.
+- **Model:** scikit-learn's `HistGradientBoostingClassifier`, compared against a logistic regression and an area-only baseline. Settings (learning rate, tree size) are picked on 2024 only; the test years are scored once. Permutation importance uses a 30,000-request sample of the test years.
 - **Dashboard:** `build.py` writes one JSON file (`docs/data.json`), and a static page draws the map, the trend, and a ranked table with [Plotly.js](https://plotly.com/javascript/), filtered by request type and year.
 
 ## Run it yourself
@@ -88,6 +118,7 @@ pip install -r requirements.txt
 python scripts/download.py     # about 2.3M rows; 10-20 minutes, depending on the API
 python scripts/build.py        # cleaning, summaries, checks, exports
 jupyter notebook analysis.ipynb
+python scripts/model.py        # trains and tests the model, about 1-2 minutes
 ```
 
 To view the dashboard locally, run `python -m http.server -d docs` and open http://localhost:8000.
@@ -102,6 +133,8 @@ To view the dashboard locally, run `python -m http.server -d docs` and open http
 | `sql/03_checks.sql` | Data-quality checks |
 | `scripts/build.py` | Runs the SQL, the checks, and the exports |
 | `analysis.ipynb` | Findings, statistical tests, and charts |
+| `scripts/model.py` | The slow-request model: features, time-based split, evaluation, charts |
+| `exports/model_metrics.json` | Every model number quoted in this README |
 | `exports/` | Summary tables (CSV) and a simplified community-area map (GeoJSON) for Tableau or Excel |
 | `docs/` | The dashboard page and its data |
 | `charts/` | Charts used in this README |
@@ -113,6 +146,7 @@ To view the dashboard locally, run `python -m http.server -d docs` and open http
 - **The 1-hour rule is a judgment call.** A few real, very fast repairs are dropped with the logged work. The notebook shows the results with and without it.
 - **Small areas are noisy.** O'Hare had 86 closed pothole requests in 2025, so its median moves a lot from year to year.
 - **Income is an estimate.** The American Community Survey figures are 5-year survey estimates, re-aggregated from census tracts to community areas by the city.
+- **The model predicts; it doesn't explain.** Month and area are strong signals, but the data can't say why summer requests wait longer (crew assignments, resurfacing season, and weather are not in it). The model also learned only from requests that passed the cleaning rules, including the 1-hour rule, which uses the close time.
 - **Correlation is not cause.** The tests show where waits differ, not why. Crew districts, street types, weather, and budgets are not in the data.
 
 ## Data sources
