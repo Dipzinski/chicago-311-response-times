@@ -1,0 +1,91 @@
+{
+  "request_type": "Pothole in Street Complaint",
+  "label": "not closed within 30 days of being opened (still-open counts as slow)",
+  "rows": {
+    "kept_pothole_requests": 231249,
+    "labeled": 229274,
+    "train_2019_2023": 155946,
+    "valid_2024": 27612,
+    "test_2025_to_aug_2026": 45716
+  },
+  "slow_share": {
+    "train": 0.287,
+    "valid": 0.284,
+    "test": 0.318
+  },
+  "chosen_settings": {
+    "learning_rate": 0.05,
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 200,
+    "max_iter": 300
+  },
+  "validation_auc": 0.782,
+  "test_results": {
+    "Area history only (baseline)": {
+      "roc_auc": 0.661,
+      "average_precision": 0.451,
+      "brier": 0.2048,
+      "top20_slow_share": 0.498,
+      "top20_recall": 0.332
+    },
+    "Logistic regression: location + calendar": {
+      "roc_auc": 0.764,
+      "average_precision": 0.616,
+      "brier": 0.1757,
+      "top20_slow_share": 0.662,
+      "top20_recall": 0.416
+    },
+    "Gradient boosting: location + calendar": {
+      "roc_auc": 0.789,
+      "average_precision": 0.644,
+      "brier": 0.1677,
+      "top20_slow_share": 0.696,
+      "top20_recall": 0.437
+    },
+    "Gradient boosting: workload + calendar (no location)": {
+      "roc_auc": 0.805,
+      "average_precision": 0.653,
+      "brier": 0.1678,
+      "top20_slow_share": 0.692,
+      "top20_recall": 0.435
+    },
+    "Gradient boosting: all inputs": {
+      "roc_auc": 0.822,
+      "average_precision": 0.676,
+      "brier": 0.1613,
+      "top20_slow_share": 0.719,
+      "top20_recall": 0.452
+    }
+  },
+  "test_slow_share_by_risk_decile": {
+    "1": 0.025,
+    "2": 0.055,
+    "3": 0.112,
+    "4": 0.19,
+    "5": 0.192,
+    "6": 0.246,
+    "7": 0.381,
+    "8": 0.544,
+    "9": 0.646,
+    "10": 0.791
+  },
+  "permutation_importance_auc_drop": {
+    "month": 0.1229,
+    "community_area": 0.0597,
+    "area_open_now": 0.022,
+    "city_open_now": 0.0114,
+    "longitude": 0.0109,
+    "latitude": 0.0089,
+    "city_recent_log_days": 0.0051,
+    "city_recent_slow_share": 0.0007,
+    "hour": 0.0003,
+    "origin": 0.0002,
+    "area_recent_log_days": 0.0001,
+    "city_new_last_7d": 0.0,
+    "city_closed_last_30d": 0.0,
+    "area_new_last_7d": -0.0,
+    "day_of_week": -0.0001,
+    "area_closed_last_30d": -0.0003,
+    "area_recent_slow_share": -0.0005
+  }
+}
