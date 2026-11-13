@@ -6,6 +6,8 @@ This project pulls **2,262,000 311 service requests** (January 2019 to September
 
 **[Open the dashboard](https://dipzinski.github.io/chicago-311-response-times/)** · [Analysis notebook](analysis.ipynb) · [Cleaning rules (SQL)](sql/01_clean.sql) · [Data-quality checks (SQL)](sql/03_checks.sql)
 
+**[Tableau Public version](https://public.tableau.com/app/profile/kyle.dipzinski/viz/Chicago311ResponseTimes_17946098920350/Dashboard)**
+
 <img src="charts/2_pothole_map.png" alt="Map of median days to close a pothole request by Chicago community area in 2025; the West and Northwest Sides are slowest" width="560">
 
 ## Key findings
